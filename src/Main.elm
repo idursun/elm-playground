@@ -9,6 +9,7 @@ import Char
 import Json.Decode as Json
 import Html.Attributes exposing (..)
 import String exposing (..)
+import Consts exposing (heroNames)
 
 
 --import Html.Events exposing ( onClick, on, keyCode )
@@ -31,176 +32,76 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    ( model, Cmd.none )
+    ( initialModel, Cmd.none )
 
 
 type alias Model =
     { name : String
     , heroes : List String
-    , selecteds: List String
+    , selecteds : List String
     }
 
 
-heroNames : List String
-heroNames =
-    [ "abaddon"
-    , "alchemist"
-    , "arc-warden"
-    , "ancient-apparition"
-    , "anti-mage"
-    , "axe"
-    , "bane"
-    , "batrider"
-    , "beastmaster"
-    , "bloodseeker"
-    , "bounty-hunter"
-    , "brewmaster"
-    , "bristleback"
-    , "broodmother"
-    , "centaur-warrunner"
-    , "chaos-knight"
-    , "chen"
-    , "clinkz"
-    , "clockwerk"
-    , "crystal-maiden"
-    , "dark-seer"
-    , "dazzle"
-    , "death-prophet"
-    , "disruptor"
-    , "doom"
-    , "dragon-knight"
-    , "drow-ranger"
-    , "earth-spirit"
-    , "earthshaker"
-    , "elder-titan"
-    , "ember-spirit"
-    , "enchantress"
-    , "enigma"
-    , "faceless-void"
-    , "gyrocopter"
-    , "huskar"
-    , "invoker"
-    , "io"
-    , "jakiro"
-    , "juggernaut"
-    , "keeper-of-the-light"
-    , "kunkka"
-    , "legion-commander"
-    , "leshrac"
-    , "lich"
-    , "lifestealer"
-    , "lina"
-    , "lion"
-    , "lone-druid"
-    , "luna"
-    , "lycan"
-    , "magnus"
-    , "medusa"
-    , "meepo"
-    , "mirana"
-    , "morphling"
-    , "naga-siren"
-    , "natures-prophet"
-    , "necrophos"
-    , "night-stalker"
-    , "nyx-assassin"
-    , "ogre-magi"
-    , "omniknight"
-    , "oracle"
-    , "outworld-devourer"
-    , "phantom-assassin"
-    , "phantom-lancer"
-    , "phoenix"
-    , "puck"
-    , "pudge"
-    , "pugna"
-    , "queen-of-pain"
-    , "razor"
-    , "riki"
-    , "rubick"
-    , "sand-king"
-    , "shadow-demon"
-    , "shadow-fiend"
-    , "shadow-shaman"
-    , "silencer"
-    , "skywrath-mage"
-    , "slardar"
-    , "slark"
-    , "sniper"
-    , "spectre"
-    , "spirit-breaker"
-    , "storm-spirit"
-    , "sven"
-    , "techies"
-    , "templar-assassin"
-    , "terrorblade"
-    , "tidehunter"
-    , "timbersaw"
-    , "tinker"
-    , "tiny"
-    , "treant-protector"
-    , "troll-warlord"
-    , "tusk"
-    , "undying"
-    , "ursa"
-    , "vengeful-spirit"
-    , "venomancer"
-    , "viper"
-    , "visage"
-    , "warlock"
-    , "weaver"
-    , "windranger"
-    , "winter-wyvern"
-    , "witch-doctor"
-    , "wraith-king"
-    , "zeus"
-    ]
-
-
-model : Model
-model =
+initialModel : Model
+initialModel =
     Model "" heroNames []
+
 
 type Msg
     = Clear
     | Enter
     | KeyMsg Keyboard.KeyCode
 
+
 pickFirstHero : List String -> List String
-pickFirstHero heroes = case List.head heroes of
-  Just a -> [a]
-  Nothing -> []
+pickFirstHero heroes =
+    case List.head heroes of
+        Just a ->
+            [ a ]
+
+        Nothing ->
+            []
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         KeyMsg code ->
-            if code == 8 then
-                update Clear model
-            else if code == 13 then
-                update Enter model
-            else
-                ( { model
-                    | name = (String.toList model.name) ++ [ Char.fromCode code ] |> String.fromList
-                    , heroes =
-                        case String.isEmpty model.name of
-                            False ->
-                                heroNames |> List.filter (\x -> String.toUpper x |> String.startsWith model.name)
+            case code of
+                8 ->
+                    update Clear model
 
-                            True ->
-                                heroNames
-                  }
-                , Cmd.none)
+                13 ->
+                    update Enter model
+
+                _ ->
+                    ( { model
+                        | name = (String.toList model.name) ++ [ Char.fromCode code ] |> String.fromList
+                        , heroes =
+                            case String.isEmpty model.name of
+                                False ->
+                                    heroNames |> List.filter (\x -> String.contains model.name (String.toUpper x))
+
+                                True ->
+                                    heroNames
+                      }
+                    , Cmd.none
+                    )
 
         Clear ->
-            ( { model | heroes = heroNames, name = "", selecteds= model.selecteds}, Cmd.none )
+            ( { initialModel | selecteds = model.selecteds }, Cmd.none )
 
-        Enter -> 
-            ( { model | heroes = heroNames, name = "", selecteds =  model.selecteds ++ model.heroes  }, Cmd.none )
+        Enter ->
+            ( { initialModel | selecteds = model.selecteds ++ model.heroes }, Cmd.none )
 
-
+onKeyDown : (Int -> a) -> Attribute a
 onKeyDown tagger =
     onWithOptions "keydown" { preventDefault = True, stopPropagation = True } (Json.map tagger keyCode)
+
+
+styles =
+    { wrapper = [ ( "display", "flex" ), ( "flex-wrap", "wrap" ) ]
+    }
 
 
 view : Model -> Html Msg
@@ -209,9 +110,10 @@ view model =
         visibleHeroes =
             List.map hero model.heroes
     in
-        div [ autofocus True, onKeyDown KeyMsg ]
-            [ button [ autofocus True ] [ text "click on me" ]
+        div [ onKeyDown KeyMsg ]
+            [ button [] [ text "click on me" ]
             , span [] [ text (toString model.name) ]
-            , div [ style [ ( "display", "flex" ), ( "flex-wrap", "wrap" ) ] ] visibleHeroes
-            , div [] (model.selecteds |> List.map (\x -> li [] [text x])) 
+            , div [ style styles.wrapper ] visibleHeroes
+            , h1 [] [text "selecteds"]
+            , div [] (model.selecteds |> List.map hero)
             ]
