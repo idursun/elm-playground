@@ -2,17 +2,11 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.App as Html
-import Html.Events exposing (onWithOptions, keyCode)
-import Components.Hero as Hero exposing (hero, Msg)
-import Keyboard
-import Char
-import Json.Decode as Json
+import Html.Events exposing (onWithOptions, keyCode, onInput, onSubmit)
 import Html.Attributes exposing (..)
+import Components.Hero as Hero exposing (hero, Msg)
 import String exposing (..)
 import Consts exposing (heroNames)
-
-
---import Html.Events exposing ( onClick, on, keyCode )
 
 
 subscriptions : Model -> Sub Msg
@@ -36,7 +30,7 @@ init =
 
 
 type alias Model =
-    { name : String
+    { filter : String
     , heroes : List String
     , selecteds : List String
     }
@@ -49,8 +43,8 @@ initialModel =
 
 type Msg
     = Clear
-    | Enter
-    | KeyMsg Keyboard.KeyCode
+    | Submit
+    | UpdateFilter String
 
 
 pickFirstHero : List String -> List String
@@ -63,40 +57,33 @@ pickFirstHero heroes =
             []
 
 
+containsHeroName filter name =
+    let
+        upperFilter =
+            String.toUpper filter
+
+        upperName =
+            String.toUpper name
+    in
+        (String.contains upperFilter upperName || String.isEmpty filter)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        KeyMsg code ->
-            case code of
-                8 ->
-                    update Clear model
-
-                13 ->
-                    update Enter model
-
-                _ ->
-                    ( { model
-                        | name = (String.toList model.name) ++ [ Char.fromCode code ] |> String.fromList
-                        , heroes =
-                            case String.isEmpty model.name of
-                                False ->
-                                    heroNames |> List.filter (\x -> String.contains model.name (String.toUpper x))
-
-                                True ->
-                                    heroNames
-                      }
-                    , Cmd.none
-                    )
+        UpdateFilter filter ->
+            ( { model
+                | filter = filter
+                , heroes = heroNames |> List.filter (containsHeroName filter)
+              }
+            , Cmd.none
+            )
 
         Clear ->
             ( { initialModel | selecteds = model.selecteds }, Cmd.none )
 
-        Enter ->
+        Submit ->
             ( { initialModel | selecteds = model.selecteds ++ model.heroes }, Cmd.none )
-
-onKeyDown : (Int -> a) -> Attribute a
-onKeyDown tagger =
-    onWithOptions "keydown" { preventDefault = True, stopPropagation = True } (Json.map tagger keyCode)
 
 
 styles =
@@ -110,10 +97,11 @@ view model =
         visibleHeroes =
             List.map hero model.heroes
     in
-        div [ onKeyDown KeyMsg ]
-            [ button [] [ text "click on me" ]
-            , span [] [ text (toString model.name) ]
+        div []
+            [ Html.form [ onSubmit Submit ]
+                [ input [ onInput UpdateFilter, value model.filter ] []
+                ]
             , div [ style styles.wrapper ] visibleHeroes
-            , h1 [] [text "selecteds"]
+            , h1 [] [ text "selecteds" ]
             , div [] (model.selecteds |> List.map hero)
             ]
