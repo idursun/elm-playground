@@ -7,6 +7,6 @@ type Msg = NoOp
 
 hero : String -> Html a
 hero name = 
-    div [style [("color", "white"), ("border", "1px solid red"), ("height","72px"), ("width", "128px"), ("margin", "5px"), ("background", "url(../../assets/abaddon.png) no-repeat center")]] [
+    div [style [("color", "white"), ("border", "1px solid red"), ("height","72px"), ("width", "128px"), ("margin", "5px"), ("background", "url(../../assets/" ++ name ++ ".png) no-repeat center")]] [
          text name
     ]
